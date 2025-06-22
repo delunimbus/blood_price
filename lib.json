@@ -1,0 +1,26 @@
+{
+    "id": "blood_price",
+    
+    "authors": [
+        "delunimbus"
+    ],
+    
+    "version": "v1.0.0",
+    "engineVer": "v0.10.0-dev",
+    
+    "config": {
+        //Configs do nothing right now (like not even implemented in the code) as there's only one option for each.
+        //More config settings coming soon
+
+        //blood_price_effect
+        //Determines when the blood price will take effect.
+        //1 = Same as TP cost (on actionCommit)
+		"blood_price_effect": 1,
+
+        //blood_price_mechanic
+        //Determines how it should handle when the BP is greater than or eqaul the user's current HP.
+        //"standard" = Spell is not selectable if BP >= HP
+
+        "blood_price_mechanic": "standard"
+	}
+}
