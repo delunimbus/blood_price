@@ -7,7 +7,7 @@ local lib = {}
 function lib:init()
     print("Loaded BloodPrice!")
 
-    Utils.hook(BattleUI, "drawState", function(orig, self)
+    Utils.hook(BattleUI, "drawState", function(orig, self)	--Check for code to inject to your drawState hook.
         if Game.battle.state == "MENUSELECT" then
             local page = math.ceil(Game.battle.current_menu_y / 3) - 1
             local max_page = math.ceil(#Game.battle.menu_items / 6) - 1
@@ -107,8 +107,8 @@ function lib:init()
                 _, tp_offset = current_item.description:gsub('\n', '\n')
                 tp_offset = tp_offset + 1
             end
----------------------------------------------------------------------------------  --Replace the current_item.tp function with this and what not.
-            if not Game.battle.party[Game.battle.current_selecting].chara:isBloodPriceUser() then
+------------------------------------------------------------------------------------------------------------------------------------------------------------  --Replace the current_item.tp sequence with this and what not.
+            if not Game.battle.party[Game.battle.current_selecting].chara:isBloodPriceUser() then	--to be changed for future configs
                 if current_item.tp and current_item.tp ~= 0 then
                     Draw.setColor(PALETTE["tension_desc"])
                     love.graphics.print(math.floor((current_item.tp / Game:getMaxTension()) * 100) .. "% "..Game:getConfig("tpName"), 260 + 240, 50 + (tp_offset * 32))
@@ -119,7 +119,6 @@ function lib:init()
 
             else
                 if current_item.bp and current_item.bp ~= 0 then
-                    --print("henlo")
                     Draw.setColor(COLORS["red"])
                     if current_item.bp_c == 0 and (current_item.bp_n > 1 or current_item.bp_d > 1) then
                         love.graphics.print(current_item.bp_n .. "/" .. current_item.bp_d .. " MAX HP", 260 + 240, 50 + (tp_offset * 32))
@@ -128,11 +127,9 @@ function lib:init()
                     end
                     
                     Draw.setColor(1, 1, 1, 1)
-                    --_, tp_offset = current_item.description:gsub('\n', '\n')
-                    --tp_offset = tp_offset + 1
                 end
             end
----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
             Draw.setColor(1, 1, 1, 1)
             if page < max_page then
                 Draw.draw(self.arrow_sprite, 470, 120 + (math.sin(Kristal.getTime()*6) * 2))
@@ -396,12 +393,11 @@ function lib:init()
             return false
         end
         if menu_item.tp and (menu_item.tp > Game:getTension()) then
-            --print("soos")
             return false
         end
         local str = menu_item.name
         if (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
-            --print("aboba")
+				--Checks to exlcude the xactions							Checks to not allow spell if they would be KOd from the action (to be used for future configuration)
                 return false
             end
         if menu_item.party then
@@ -420,13 +416,13 @@ function lib:init()
 
     end)
 
-    Utils.hook(Battle, "addMenuItem", function(orig, self, tbl)
+    Utils.hook(Battle, "addMenuItem", function(orig, self, tbl)		--Check for code to inject to your addBattleMenu hook.
 
         tbl = {
             ["name"] = tbl.name or "",
             ["tp"] = tbl.tp or 0,
-            ["bp"] = tbl.bp or 0,
---------------------------------------------------            
+-------------------------------------------------- 
+            ["bp"] = tbl.bp or 0,           
             ["bp_c"] = tbl.bp_c or 0,
             ["bp_n"] = tbl.bp_n or 0,
             ["bp_d"] = tbl.bp_d or 0,
@@ -447,6 +443,8 @@ function lib:init()
     Utils.hook(EnemyBattler, "onTurnEnd", function(orig, self, ...)
         orig(self, ...)
     
+		--Not used currently
+	
         for _,battler in ipairs(Game.party) do
             if battler:isBloodPriceUser() then
                 battler:setFlag("current_hp", battler:getHealth() or nil)
@@ -459,7 +457,7 @@ function lib:init()
     
         orig(self, ...)
 
-        self.use_blood_price = false
+        self.use_blood_price = false	--For switch-up funcitonality (not implemented yet)
 
         self.blood_price_cost = 0    --Flat HP cost. THIS TAKES PREDCENDECE, SO BE SURE TO SET IT TO 0 (default) IF YOU USE THE MAX HP TABLE!
 
@@ -470,7 +468,7 @@ function lib:init()
 
     end)
 
-    Utils.hook(Spell, "useBloodPrice", function(orig, self)
+    Utils.hook(Spell, "useBloodPrice", function(orig, self)		--For switch-up funcitonality (not implemented yet)
         return self.use_blood_price
     end)
 
@@ -506,7 +504,7 @@ function lib:init()
 
     end)
 
-    Utils.hook(PartyMember, "isBloodPriceUser", function(orig, self)
+    Utils.hook(PartyMember, "isBloodPriceUser", function(orig, self)	--Switch from the "magic" button to the "bloodmagic" button.
         return self.blood_price_user
     end)
 
@@ -537,7 +535,7 @@ function lib:onActionSelect(battler, button)
     if button.type == "bloodmagic" then
         Game.battle:clearMenuItems()
         
-        -- First, register X-Actions as menu items.
+        -- First, register X-Actions as menu items (X-Action are to be left alone)
 
         if Game.battle.encounter.default_xactions and battler.chara:hasXAct() then
             local spell = {
@@ -685,11 +683,11 @@ function lib:onBattleActionUndo(action, action_type, battler, target)
         if battler.chara:isBloodPriceUser() then
             local bp = action.data:getBloodPrice(battler.chara)
             local hp = battler.chara:getFlag("current_hp", 0)
-            if hp <= bp then
+            --[[if hp <= bp then
                 battler.chara:heal(hp - 1)
             else
                 battler.chara:heal(bp)
-            end
+            end]]
             
         end
         action.data:onDeselect(battler, action.target)
