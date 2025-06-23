@@ -16,11 +16,13 @@ function spell:init()
     -- TP cost
     self.cost = 200
     --self.blood_price_cost = -20   --Flat HP cost. THIS TAKES PREDCENDECE, SO BE SURE TO SET IT TO 0 (default) IF YOU USE THE MAX HP TABLE!
-    --local bp = 
+
     self.blood_price_max_hp = {     --Use this instead to make blood price based on max hp
         ["numerator"] = 1,          --Should default to 1
         ["denominator"] = 2         --Should default to 1
     }
+    --Makes spell use the HP STAT as mana (as well).
+    self.blood_price_perma_cost = true
     
     -- Target mode (ally, party, enemy, enemies, or none)
     self.target = "enemies"
