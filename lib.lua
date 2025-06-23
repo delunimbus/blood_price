@@ -390,36 +390,16 @@ function lib:init()
     end)
 
     Utils.hook(Battle, "canSelectMenuItem", function(orig, self, menu_item)
-    orig(self, menu_item)
+            
+        orig(self, menu_item)
 
-        if menu_item.unusable then
-            return false
-        end
-        if menu_item.tp and (menu_item.tp > Game:getTension()) then
-            --print("soos")
-            return false
-        end
-------------------------------------------------------------------------------------------  --Here too.
         local str = menu_item.name
         if self.party[self.current_selecting].chara:isBloodPriceUser() then
-            if (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
+            if menu_item.action == "SPELL" and (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
                 return false
             end
         end
-------------------------------------------------------------------------------------------        
-        if menu_item.party then
-            for _,party_id in ipairs(menu_item.party) do
-                local party_index = self:getPartyIndex(party_id)
-                local battler = self.party[party_index]
-                
-                local action = self.character_actions[party_index]
-
-                if (not battler) or (not battler:isActive()) or (action and action.cancellable == false) then
-                    -- They're either down, asleep, or don't exist. Either way, they're not here to do the action.
-                    return false
-                end
-            end
-        end
+   
         return true
 
     end)
