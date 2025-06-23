@@ -119,17 +119,27 @@ function lib:init()
 
             else
                 if current_item.bp and current_item.bp ~= 0 then
-                    --print("henlo")
+
                     Draw.setColor(COLORS["red"])
-                    if current_item.bp_c == 0 and (current_item.bp_n > 1 or current_item.bp_d > 1) then
-                        love.graphics.print(current_item.bp_n .. "/" .. current_item.bp_d .. " MAX HP", 260 + 240, 50 + (tp_offset * 32))
+                    if current_item.bp_p == true then
+
+                        if current_item.bp_c == 0 and (current_item.bp_n ~= 0 or current_item.bp_d ~= 0) then
+                            love.graphics.print(current_item.bp_n .. "/" .. current_item.bp_d .. " HP STAT", 260 + 240, 50 + (tp_offset * 32))
+                        else
+                            love.graphics.print(current_item.bp .. " HP STAT", 260 + 240, 50 + (tp_offset * 32))
+                        end
+
                     else
-                        love.graphics.print(current_item.bp .. " HP", 260 + 240, 50 + (tp_offset * 32))
+                        if current_item.bp_c == 0 and (current_item.bp_n ~= 0 or current_item.bp_d ~= 0) then
+                            love.graphics.print(current_item.bp_n .. "/" .. current_item.bp_d .. " MAX HP", 260 + 240, 50 + (tp_offset * 32))
+                        else
+                            love.graphics.print(current_item.bp .. " HP", 260 + 240, 50 + (tp_offset * 32))
+                        end
+                        
+                        Draw.setColor(1, 1, 1, 1)
+                        --_, tp_offset = current_item.description:gsub('\n', '\n')
+                        --tp_offset = tp_offset + 1
                     end
-                    
-                    Draw.setColor(1, 1, 1, 1)
-                    --_, tp_offset = current_item.description:gsub('\n', '\n')
-                    --tp_offset = tp_offset + 1
                 end
             end
 ---------------------------------------------------------------------------------
@@ -393,13 +403,14 @@ function lib:init()
             
         orig(self, menu_item)
 
+
         local str = menu_item.name
         if self.party[self.current_selecting].chara:isBloodPriceUser() and Game.battle.state_reason == "SPELL" then
-            if menu_item.action == "SPELL" and (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
+            if (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
                 return false
             end
         end
-   
+
         return true
 
     end)
@@ -414,6 +425,7 @@ function lib:init()
             ["bp_c"] = tbl.bp_c or 0,
             ["bp_n"] = tbl.bp_n or 0,
             ["bp_d"] = tbl.bp_d or 0,
+            ["bp_p"] = tbl.bp_p or false,
 --------------------------------------------------
             ["unusable"] = tbl.unusable or false,
             ["description"] = tbl.description or "",
@@ -439,6 +451,45 @@ function lib:init()
 
     end)
 
+    Utils.hook(Encounter, "updateHPFlags", function(orig, self, terminate)   --setUpHPFlags(boolean) Used for the "perma" option. 
+
+        for _,battler in ipairs (Game.party) do
+            if battler:isBloodPriceUser() then
+                if terminate == true then                                   --terminates the hp flags
+                    battler:setFlag("old_hp_stat", nil)
+                    battler:setFlag("old_current_hp", nil)
+                else
+                    battler:setFlag("old_hp_stat", battler.stats["health"])
+                    battler:setFlag("old_current_hp", battler:getHealth())
+                    print(battler:getFlag("old_hp_stat", "no"))
+                    print(battler:getFlag("old_current_hp", "SO B OMEGALUL D"))
+                end
+            end
+        end
+
+    end)
+
+    Utils.hook(Encounter, "onBattleInit", function(orig, self)
+        orig(self)
+        print("huh?")
+        self.updateHPFlags()
+
+    end)
+
+    Utils.hook(Encounter, "onTurnEnd", function(orig, self, ...)
+        orig(self, ...)
+
+        self.updateHPFlags()
+
+    end)
+
+    Utils.hook(Encounter, "onBattleEnd", function(orig, self)
+        orig(self)
+
+        self.updateHPFlags(true)
+        
+    end)
+
     Utils.hook(Spell, "init", function(orig, self, ...)
     
         orig(self, ...)
@@ -452,7 +503,7 @@ function lib:init()
         ["denominator"] = 1         --Should default to 1
         }
 
-        self.blood_price_perma_cost = false   --Whether to subract from your HP STAT!
+        self.blood_price_perma_cost = false   --Whether to subract from your HP STAT as well!
 
     end)
 
@@ -604,6 +655,7 @@ function lib:onActionSelect(battler, button)
                 ["bp_c"] = spell:getBPFlatCost(),
                 ["bp_n"] = spell:getBPNumerator(),
                 ["bp_d"] = spell:getBPDenominator(),
+                ["bp_p"] = spell:useUpHPStat(),
                 ["unusable"] = not spell:isUsable(battler.chara),
                 ["description"] = spell:getBattleDescription(),
                 ["party"] = spell.party,
@@ -657,9 +709,9 @@ function lib:onBattleActionCommit(action, action_type, battler, target)
                 if action.data:useUpHPStat() then
                     battler.chara:setFlag("old_hp_stat", battler.chara.stats["health"])
                     battler.chara.stats["health"] = battler.chara.stats["health"] - bp
-                    if bp <= battler.chara.stats["health"] then
+                    --if bp <= battler.chara.stats["health"] then
                         
-                    end
+                    --end
                 end
                     Game.battle:hurt(bp, true, battler)
                 --end
@@ -689,8 +741,12 @@ function lib:onBattleActionUndo(action, action_type, battler, target)
                 battler.chara:heal(hp - 1)
             else]]
             if action.data:useUpHPStat() then
-                battler.chara.stats["health"] = battler.chara:getFlag("old_hp_stat", battler.chara.stats["health"])
-                battler.chara:heal(battler.chara:getFlag("old_hp_stat", battler.chara.stats["health"]))
+                Assets.stopAndPlaySound("power")
+                battler.chara.stats["health"] = battler.chara:getFlag("old_hp_stat", 0)
+
+                battler.chara:setHealth(battler.chara:getFlag("old_current_hp", 0))
+                --battler.chara:heal(battler.chara:getFlag("old_hp_stat", battler.chara.stats["health"]))
+            --end
             else
                 battler.chara:heal(bp)
             end
