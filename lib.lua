@@ -394,7 +394,7 @@ function lib:init()
         orig(self, menu_item)
 
         local str = menu_item.name
-        if self.party[self.current_selecting].chara:isBloodPriceUser() then
+        if self.party[self.current_selecting].chara:isBloodPriceUser() and Game.battle.state_reason == "SPELL" then
             if menu_item.action == "SPELL" and (not string.match(str, "-Action") and menu_item.bp == 0) or (menu_item.bp >= self.party[self.current_selecting].chara:getHealth()) then
                 return false
             end
